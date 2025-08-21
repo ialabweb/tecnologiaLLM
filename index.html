@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cómo Funciona un Modelo de Lenguaje</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .step-content {
+            min-height: 350px; /* Increased height for more content */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .step-hidden {
+            display: none;
+            opacity: 0;
+        }
+        .step-visible {
+            display: flex;
+            opacity: 1;
+        }
+        .token {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: inline-block;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .embedding-vector {
+            background-color: #10b981; /* Emerald-500 */
+            color: white;
+            padding: 6px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            animation: scaleUp 0.3s ease-out forwards;
+            transform-origin: bottom;
+        }
+        .nn-layer {
+            background-color: #f59e0b; /* Amber-500 */
+            color: white;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .arrow {
+            font-size: 2rem;
+            color: #6b7280; /* Gray-500 */
+            margin: 0 10px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e5e7eb; /* Gray-200 */
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #3b82f6; /* Blue-500 */
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
+        .info-box {
+            background-color: #eff6ff; /* Blue-50 */
+            border-left: 4px solid #3b82f6; /* Blue-500 */
+            padding: 16px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animated-dots span {
+            animation: blink 1.4s infinite both;
+        }
+        .animated-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .animated-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">¿Cómo Funciona un Modelo de Lenguaje?</h1>
+            <p class="text-gray-600 text-sm sm:text-base">Una visualización interactiva del proceso.</p>
+        </header>
+
+        <div class="progress-bar-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="visualizationArea" class="relative">
+            <div id="step-1" class="step-content step-visible">
+                <div class="text-center">
+                    <i class="fas fa-book-open fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">1. El Entrenamiento Previo</h2>
+                    <p class="text-gray-600 leading-relaxed">
+                        Antes de poder responder, el modelo ha sido "entrenado" con una inmensa cantidad de texto (libros, artículos, sitios web, etc.).
+                        Durante este entrenamiento, aprende patrones del lenguaje, gramática, contextos, relaciones entre palabras y una vasta cantidad de información sobre el mundo.
+                        Imagina una biblioteca gigantesca de conocimiento.
+                    </p>
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg text-sm text-gray-500">
+                        <p><strong>Analogía:</strong> Es como un estudiante que ha leído miles de libros para prepararse para un examen.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-2" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-keyboard fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">2. La Entrada del Usuario (Prompt)</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        El proceso comienza cuando introduces una consulta, pregunta o cualquier texto. Esto se conoce como "prompt".
+                    </p>
+                    <input type="text" id="userInput" class="w-full max-w-md p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="¿Cuál es la capital de Francia?)">
+                    <p class="text-xs text-gray-500 mt-2">Presiona "Siguiente" para continuar con el texto de ejemplo.</p>
+                </div>
+            </div>
+
+            <div id="step-3" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-puzzle-piece fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">3. Tokenización</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        El texto de entrada se descompone en unidades más pequeñas llamadas "tokens". Estos pueden ser palabras, partes de palabras o caracteres.
+                    </p>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <p class="text-sm text-gray-700 mb-2"><strong>Entrada Original:</strong></p>
+                        <p id="originalTextDisplay" class="text-gray-800 font-medium mb-4 p-2 bg-white rounded shadow"></p>
+                        <p class="text-sm text-gray-700 mb-2"><strong>Tokens Resultantes:</strong></p>
+                        <div id="tokenizedOutput" class="flex flex-wrap justify-center items-center p-2 bg-white rounded shadow">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-4" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-project-diagram fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">4. Conversión a Embeddings</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        Cada token se convierte en una representación numérica (vector) llamada "embedding". Estos capturan el significado y contexto del token.
+                    </p>
+                    <div id="embeddingOutput" class="flex flex-col items-center space-y-3 w-full max-w-md">
+                        </div>
+                </div>
+            </div>
+
+            <div id="step-5" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-brain fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">5. Procesamiento en la Red Neuronal</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        Los embeddings se procesan a través de múltiples capas de una red neuronal (arquitectura "Transformer"). La red usa un mecanismo de "atención" para ponderar la importancia de diferentes tokens.
+                    </p>
+                    <div class="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
+                        <div class="p-3 bg-green-100 rounded-lg text-sm text-green-700">Embeddings de Entrada</div>
+                        <div class="arrow hidden sm:block"><i class="fas fa-arrow-right"></i></div>
+                        <div class="arrow block sm:hidden"><i class="fas fa-arrow-down"></i></div>
+                        <div class="nn-layer">Capa 1</div>
+                        <div class="arrow hidden sm:block"><i class="fas fa-arrow-right"></i></div>
+                        <div class="arrow block sm:hidden"><i class="fas fa-arrow-down"></i></div>
+                        <div class="nn-layer">Capa 2</div>
+                        <div class="arrow hidden sm:block"><i class="fas fa-arrow-right"></i></div>
+                        <div class="arrow block sm:hidden"><i class="fas fa-arrow-down"></i></div>
+                        <div class="nn-layer">...</div>
+                        <div class="arrow hidden sm:block"><i class="fas fa-arrow-right"></i></div>
+                        <div class="arrow block sm:hidden"><i class="fas fa-arrow-down"></i></div>
+                        <div class="nn-layer">Capa N</div>
+                        <div class="arrow hidden sm:block"><i class="fas fa-arrow-right"></i></div>
+                        <div class="arrow block sm:hidden"><i class="fas fa-arrow-down"></i></div>
+                        <div class="p-3 bg-purple-100 rounded-lg text-sm text-purple-700">Contexto Procesado</div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4">El mecanismo de "atención" permite al modelo enfocarse en las partes más relevantes de la entrada para cada paso de la generación.</p>
+                </div>
+            </div>
+
+            <div id="step-6" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-cogs fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">6. Predicción Iterativa del Siguiente Token</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        La red predice el token más probable que debería seguir. Este token se añade al contexto, y el proceso se repite para generar la respuesta token por token.
+                    </p>
+                    <div class="bg-gray-100 p-4 rounded-lg w-full max-w-md">
+                        <p class="text-sm text-gray-700 mb-1"><strong>Contexto Actual (Entrada + Generado):</strong> <span id="iterativeContext" class="font-mono text-xs"></span></p>
+                        <div class="my-2 p-3 border border-dashed border-blue-400 rounded-md bg-blue-50">
+                            Red Neuronal <i class="fas fa-arrow-right mx-1"></i> Predice <i class="fas fa-arrow-right mx-1"></i> <span id="predictedTokenDisplay" class="token bg-green-500"></span>
+                        </div>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Respuesta Generada (hasta ahora):</strong></p>
+                        <div id="iterativeOutput" class="mt-1 p-2 bg-white rounded shadow min-h-[50px]">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-7" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-stream fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">7. Reconstrucción de la Respuesta</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        Los tokens predichos secuencialmente se ensamblan para formar la respuesta final.
+                    </p>
+                    <div class="bg-gray-100 p-4 rounded-lg w-full max-w-lg">
+                        <p class="text-sm text-gray-700 mb-2"><strong>Tokens Generados:</strong></p>
+                        <div id="finalTokens" class="flex flex-wrap justify-center items-center p-2 bg-white rounded shadow mb-4">
+                            </div>
+                        <div class="text-center my-2"><i class="fas fa-arrow-down fa-2x text-gray-400"></i></div>
+                        <p class="text-sm text-gray-700 mb-2"><strong>Respuesta Ensamblada:</strong></p>
+                        <div id="reconstructedResponse" class="p-3 bg-green-100 text-green-800 rounded-lg shadow">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-8" class="step-content step-hidden">
+                <div class="text-center">
+                    <i class="fas fa-desktop fa-3x text-blue-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">8. Presentación al Usuario</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        La secuencia de tokens generados se convierte de nuevo en texto legible y se muestra como la respuesta del modelo.
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+                        <p class="text-sm text-gray-500 mb-1">Modelo:</p>
+                        <p id="finalOutputToUser" class="text-gray-800 text-lg">
+                            </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-9" class="step-content step-hidden">
+                <div class="text-center w-full">
+                    <i class="fas fa-exclamation-triangle fa-3x text-yellow-500 mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">9. Nota Adicional Importante</h2>
+                    <div class="info-box text-left text-sm sm:text-base text-gray-700 leading-relaxed">
+                        <p>Es crucial recordar que, aunque el modelo puede generar respuestas increíblemente coherentes y contextualmente relevantes, <strong>no "entiende", "piensa" o "siente"</strong> como un ser humano.</p>
+                        <p class="mt-2">Su habilidad se basa en el <strong>reconocimiento y la reproducción de patrones</strong> aprendidos de los vastos datos de entrenamiento.</p>
+                        <p class="mt-2">Es una herramienta poderosa para procesar y generar lenguaje, pero no posee conciencia ni comprensión genuina.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+            <button id="prevBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-arrow-left mr-2"></i>Anterior
+            </button>
+            <div id="stepIndicator" class="text-sm text-gray-600">Paso 1 / 9</div>
+            <button id="nextBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                Siguiente<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+        <div class="mt-4 text-center">
+             <button id="restartBtn" class="hidden bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                <i class="fas fa-redo mr-2"></i>Reiniciar
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const steps = [
+            { id: 'step-1', name: 'Entrenamiento Previo' },
+            { id: 'step-2', name: 'Entrada del Usuario' },
+            { id: 'step-3', name: 'Tokenización' },
+            { id: 'step-4', name: 'Conversión a Embeddings' },
+            { id: 'step-5', name: 'Procesamiento en Red Neuronal' },
+            { id: 'step-6', name: 'Predicción Iterativa' },
+            { id: 'step-7', name: 'Reconstrucción de Respuesta' },
+            { id: 'step-8', name: 'Presentación al Usuario' },
+            { id: 'step-9', name: 'Nota Importante' }
+        ];
+        let currentStep = 0;
+
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const progressBar = document.getElementById('progressBar');
+        const stepIndicator = document.getElementById('stepIndicator');
+
+        // Demo data
+        let inputText = "¿Cuál es la capital de Francia?"; // Default input
+        let tokens = [];
+        let generatedResponseTokens = []; // Will store the dynamically generated tokens for the response
+
+        // Function to get dynamic response tokens based on input
+        function getDynamicResponseTokens(userInput) {
+            const lowerInput = userInput.toLowerCase();
+            if (lowerInput.includes("capital de francia")) {
+                return ["París", "es", "la", "capital", "de", "Francia", "."];
+            } else if (lowerInput.includes("hola") || lowerInput.includes("saludos") || lowerInput.includes("buenos dias")) {
+                return ["¡Hola!", "¿En", "qué", "puedo", "ayudarte", "hoy", "?"];
+            } else if (lowerInput.includes("nombre") && (lowerInput.includes("tu") || lowerInput.includes("cómo te llamas"))) {
+                return ["Soy", "un", "asistente", "virtual", "simulado", "."];
+            } else if (lowerInput.includes("tiempo") || lowerInput.includes("clima")) {
+                return ["Como", "modelo", "simulado,", "no", "tengo", "acceso", "al", "clima", "en", "tiempo", "real", "."];
+            } else if (lowerInput.includes("gracias") || lowerInput.includes("muchas gracias")) {
+                return ["¡De", "nada!", "Es", "un", "placer", "ayudar", "."];
+            } else if (lowerInput.includes("adiós") || lowerInput.includes("hasta luego")) {
+                return ["¡Hasta", "pronto!", "Que", "tengas", "un", "buen", "día", "."];
+            } else if (lowerInput.includes("chiste") || lowerInput.includes("cuéntame algo gracioso")) {
+                return ["¿Por", "qué", "los", "pájaros", "no", "usan", "Facebook?", "Porque", "ya", "tienen", "Twitter", "!"];
+            }
+            // Default response for unrecognized input
+            return ["Estoy", "procesando", "tu", "solicitud", ".", "Esta", "es", "una", "respuesta", "genérica", "simulada", "."];
+        }
+
+
+        function updateVisualization() {
+            steps.forEach((step, index) => {
+                const stepElement = document.getElementById(step.id);
+                if (index === currentStep) {
+                    stepElement.classList.remove('step-hidden');
+                    stepElement.classList.add('step-visible');
+                } else {
+                    stepElement.classList.remove('step-visible');
+                    stepElement.classList.add('step-hidden');
+                }
+            });
+
+            progressBar.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+            stepIndicator.textContent = `Paso ${currentStep + 1} / ${steps.length}`;
+
+            prevBtn.disabled = currentStep === 0;
+            if (currentStep === steps.length - 1) {
+                nextBtn.innerHTML = 'Finalizar <i class="fas fa-check ml-2"></i>';
+                restartBtn.classList.remove('hidden');
+            } else { // Ensure "Siguiente" is restored if not the last step
+                 nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ml-2"></i>';
+                 if(currentStep !== steps.length -1) restartBtn.classList.add('hidden'); // Hide restart unless it's the end
+            }
+
+
+            // Specific logic for each step
+            if (currentStep === 2) { // Tokenization
+                const userInputElement = document.getElementById('userInput');
+                // Use default if empty, otherwise use user's input
+                if (userInputElement.value.trim() !== "") {
+                    inputText = userInputElement.value.trim();
+                } else {
+                    inputText = "¿Cuál es la capital de Francia?"; // Reset to default if cleared
+                    userInputElement.placeholder = "Escribe tu pregunta aquí (ej: ¿Cuál es la capital de Francia?)";
+                }
+                document.getElementById('originalTextDisplay').textContent = inputText;
+                tokens = inputText.match(/\b[\wáéíóúüñ']+\b|[.,!?¿¡]/gi) || [inputText]; // Improved regex for Spanish
+                const tokenizedOutput = document.getElementById('tokenizedOutput');
+                tokenizedOutput.innerHTML = '';
+                tokens.forEach(token => {
+                    const tokenEl = document.createElement('span');
+                    tokenEl.className = 'token';
+                    tokenEl.textContent = token;
+                    tokenizedOutput.appendChild(tokenEl);
+                });
+            } else if (currentStep === 3) { // Embeddings
+                const embeddingOutput = document.getElementById('embeddingOutput');
+                embeddingOutput.innerHTML = '';
+                tokens.forEach(token => {
+                    const tokenGroup = document.createElement('div');
+                    tokenGroup.className = 'flex items-center space-x-2 p-2 bg-gray-50 rounded-md shadow-sm';
+                    
+                    const tokenEl = document.createElement('span');
+                    tokenEl.className = 'token';
+                    tokenEl.textContent = token;
+                    tokenGroup.appendChild(tokenEl);
+
+                    const arrowEl = document.createElement('span');
+                    arrowEl.innerHTML = '<i class="fas fa-arrow-right text-gray-400"></i>';
+                    tokenGroup.appendChild(arrowEl);
+
+                    const vectorContainer = document.createElement('div');
+                    vectorContainer.className = 'flex';
+                    for (let i = 0; i < 5; i++) { 
+                        const vectorComp = document.createElement('span');
+                        vectorComp.className = 'embedding-vector';
+                        vectorComp.textContent = (Math.random() * 2 - 1).toFixed(1);
+                        vectorComp.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                        vectorContainer.appendChild(vectorComp);
+                    }
+                    tokenGroup.appendChild(vectorContainer);
+                    embeddingOutput.appendChild(tokenGroup);
+                });
+            } else if (currentStep === 5) { // Iterative Prediction
+                generatedResponseTokens = []; // Clear previous generated tokens
+                document.getElementById('iterativeOutput').innerHTML = '';
+                document.getElementById('iterativeContext').textContent = tokens.join(' ') + ' ... ';
+                const dynamicResponse = getDynamicResponseTokens(inputText); // Get the dynamic response tokens
+                simulateIterativePrediction(0, dynamicResponse); // Start simulation with these tokens
+            } else if (currentStep === 6) { // Reconstruction
+                const finalTokensContainer = document.getElementById('finalTokens');
+                finalTokensContainer.innerHTML = '';
+                generatedResponseTokens.forEach(token => {
+                    const tokenEl = document.createElement('span');
+                    tokenEl.className = 'token bg-green-500';
+                    tokenEl.textContent = token;
+                    finalTokensContainer.appendChild(tokenEl);
+                });
+                document.getElementById('reconstructedResponse').textContent = generatedResponseTokens.join(' ');
+            } else if (currentStep === 7) { // Presentation
+                document.getElementById('finalOutputToUser').textContent = generatedResponseTokens.join(' ');
+            }
+        }
+        
+        let iterativeTimeout;
+        function simulateIterativePrediction(tokenIndex, responseTokensArray) {
+            if (currentStep !== 5) { 
+                clearTimeout(iterativeTimeout);
+                return;
+            }
+
+            if (tokenIndex < responseTokensArray.length) {
+                const currentPredictedToken = responseTokensArray[tokenIndex];
+                generatedResponseTokens.push(currentPredictedToken);
+
+                document.getElementById('predictedTokenDisplay').textContent = currentPredictedToken;
+                
+                const iterativeOutput = document.getElementById('iterativeOutput');
+                const tokenEl = document.createElement('span');
+                tokenEl.className = 'token bg-green-500';
+                tokenEl.textContent = currentPredictedToken;
+                iterativeOutput.appendChild(tokenEl);
+                iterativeOutput.appendChild(document.createTextNode(' ')); 
+
+                let currentContextText = tokens.join(' ');
+                // Show previously generated tokens in context for next prediction
+                if (generatedResponseTokens.length > 0) {
+                     // Display input tokens + already generated response tokens + "..."
+                    currentContextText += ' ' + generatedResponseTokens.slice(0, generatedResponseTokens.length).join(' ') + ' ...';
+                } else {
+                    currentContextText += ' ...';
+                }
+                document.getElementById('iterativeContext').textContent = currentContextText;
+
+                iterativeTimeout = setTimeout(() => simulateIterativePrediction(tokenIndex + 1, responseTokensArray), 800); // Slightly faster simulation
+            } else {
+                 document.getElementById('predictedTokenDisplay').textContent = '[EOS]'; 
+                 document.getElementById('iterativeContext').textContent = tokens.join(' ') + ' ' + generatedResponseTokens.join(' ');
+            }
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateVisualization();
+            } else if (nextBtn.textContent.includes('Finalizar')) {
+                // Optional: Show a modal or message on completion
+                // For now, just keeps the restart button visible
+                 restartBtn.classList.remove('hidden'); // Ensure restart is visible
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 0) {
+                clearTimeout(iterativeTimeout); 
+                currentStep--;
+                updateVisualization();
+                if (currentStep === 5) { // If returning to iterative prediction step
+                    generatedResponseTokens = [];
+                    document.getElementById('iterativeOutput').innerHTML = '';
+                    document.getElementById('iterativeContext').textContent = tokens.join(' ') + ' ... ';
+                    const dynamicResponse = getDynamicResponseTokens(inputText);
+                    simulateIterativePrediction(0, dynamicResponse);
+                }
+            }
+        });
+        
+        restartBtn.addEventListener('click', () => {
+            currentStep = 0;
+            inputText = "¿Cuál es la capital de Francia?"; 
+            document.getElementById('userInput').value = ''; 
+            document.getElementById('userInput').placeholder = "Escribe tu pregunta aquí (ej: ¿Cuál es la capital de Francia?)";
+            tokens = [];
+            generatedResponseTokens = []; 
+            clearTimeout(iterativeTimeout); 
+            nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ml-2"></i>';
+            restartBtn.classList.add('hidden');
+            updateVisualization();
+        });
+
+        // Initial setup
+        updateVisualization();
+    </script>
+
+</body>
+</html>
